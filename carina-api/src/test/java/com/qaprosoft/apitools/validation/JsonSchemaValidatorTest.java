@@ -26,7 +26,7 @@ import org.testng.annotations.Test;
 
 public class JsonSchemaValidatorTest {
 
-	@Test
+/*	@Test
     public void testErrorSchema4() throws IOException {
         String actualRs = IOUtils.toString(JsonSchemaValidatorTest.class.getClassLoader().getResourceAsStream(
                 "validation/schema/schema4/rs_w_schema_error.json"), Charset.forName("UTF-8"));
@@ -84,5 +84,5 @@ public class JsonSchemaValidatorTest {
             Assert.assertEquals(normalizeSpace(e.getMessage()), normalizeSpace(expectedError), "Error message not as expected");
         }
         Assert.assertTrue(isErrorThrown, "Assertion Error not thrown");
-    }
+    }*/
 }
