@@ -100,6 +100,7 @@ import com.qaprosoft.carina.core.foundation.webdriver.screenshot.IScreenshotRule
 import com.zebrunner.agent.core.registrar.Artifact;
 import com.zebrunner.agent.core.registrar.CurrentTest;
 import com.zebrunner.agent.core.registrar.Label;
+import com.zebrunner.agent.core.registrar.TestRail;
 import com.zebrunner.agent.core.registrar.label.CompositeLabelResolver;
 import com.zebrunner.agent.core.registrar.maintainer.ChainedMaintainerResolver;
 import com.zebrunner.agent.testng.core.testname.TestNameResolverRegistry;
@@ -202,6 +203,8 @@ public class CarinaListener extends AbstractTestListener implements ISuiteListen
         }
         // register app_version/build as artifact if available...
         Configuration.setBuild(Configuration.get(Parameter.APP_VERSION));
+        
+        attachTestRunLabels(suite);
 
         LOGGER.info("CARINA_CORE_VERSION: " + getCarinaVersion());
     }
@@ -360,7 +363,6 @@ public class CarinaListener extends AbstractTestListener implements ISuiteListen
     @Override
     public void onFinish(ISuite suite) {
         LOGGER.debug("CarinaListener->onFinish(ISuite suite)");
-        attachTestRunLabels(suite);
         try {
             // TODO: quitAllDivers forcibly
             ReportContext.removeTempDir(); // clean temp artifacts directory
@@ -917,8 +919,8 @@ public class CarinaListener extends AbstractTestListener implements ISuiteListen
     private void attachTestLabels(ITestResult result) {
         // register testrail cases...
         Set<String> trCases = getTestRailCasesUuid(result);
-        if (trCases.size() > 0) {
-            Label.attachToTest(SpecialKeywords.TESTRAIL_TESTCASE_UUID, Arrays.copyOf(trCases.toArray(), trCases.size(), String[].class));
+        for (String trCase : trCases) {
+            TestRail.setCaseId(trCase);
         }
 
         // register qtest cases...
@@ -929,12 +931,38 @@ public class CarinaListener extends AbstractTestListener implements ISuiteListen
     }
 
     private void attachTestRunLabels(ISuite suite) {
-        String trProject = getTestRailProjectId(suite);
         String trSuite = getTestRailSuiteId(suite);
-
-        if (!trSuite.isEmpty() && !trProject.isEmpty()) {
-            Label.attachToTestRun(SpecialKeywords.TESTRAIL_PROJECT_ID, trProject);
-            Label.attachToTestRun(SpecialKeywords.TESTRAIL_SUITE_ID, trSuite);
+        if (!trSuite.isEmpty()) {
+            TestRail.setSuiteId(trSuite);
+        }
+        
+        // read temporary command line argument to improve test rail integration capabilities.
+        if (!R.CONFIG.getBoolean("testrail_enabled")) {
+            LOGGER.info("disable TestRail integration!");
+            TestRail.disableSync();
+        }
+        
+        if (R.CONFIG.getBoolean("include_all")) {
+            LOGGER.info("enable include_all for TestRail integration!");
+            TestRail.includeAllTestCasesInNewRun();
+        }
+        
+        String milestone = R.CONFIG.get("milestone");
+        if (!milestone.isEmpty()) {
+            LOGGER.info("Set TestRail milestone name: " + milestone);
+            TestRail.setMilestone(milestone);
+        }
+        
+        String runName = R.CONFIG.get("run_name");
+        if (!runName.isEmpty()) {
+            LOGGER.info("Set TestRail run name: " + runName);
+            TestRail.setRunName(runName);
+        }
+        
+        String assignee = R.CONFIG.get("assignee");
+        if (!assignee.isEmpty()) {
+            LOGGER.info("Set TestRail assignee: " + assignee);
+            TestRail.setAssignee(assignee);
         }
 
         String qtestProject = getQTestProjectId(suite);
